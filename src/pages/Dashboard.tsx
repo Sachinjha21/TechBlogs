@@ -5,8 +5,33 @@ import BlogList from '../components/BlogList';
 import AddEditBlog from '../components/AddEditBlog';
 import ViewBlog from '../components/ViewBlog';
 
+interface Comment {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+  replies: Reply[];
+}
+
+interface Reply {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+}
+
+interface Blog {
+  id: string;
+  title: string;
+  image: string;
+  description: string;
+  content: string;
+  createdAt: string;
+  comments: Comment[];
+}
+
 // Mock data
-const initialBlogs = [
+const initialBlogs: Blog[] = [
   {
     id: 'blog1',
     title: 'Getting Started with React',
@@ -29,13 +54,13 @@ const initialBlogs = [
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
-  const [blogs, setBlogs] = useState(initialBlogs);
+  const [blogs, setBlogs] = useState<Blog[]>(initialBlogs);
   const navigate = useNavigate();
 
-  const handleAddBlog = (blog: any) => {
-    const newBlog = {
+  const handleAddBlog = (blog: Omit<Blog, 'id' | 'createdAt' | 'comments'> & { id?: string }) => {
+    const newBlog: Blog = {
       ...blog,
-      id: 'blog' + (blogs.length + 1),
+      id: blog.id || 'blog' + (blogs.length + 1),
       createdAt: new Date().toISOString(),
       comments: []
     };
@@ -43,7 +68,7 @@ const Dashboard = () => {
     navigate('/dashboard');
   };
 
-  const handleUpdateBlog = (updatedBlog: any) => {
+  const handleUpdateBlog = (updatedBlog: Omit<Blog, 'createdAt' | 'comments'> & { id: string }) => {
     setBlogs(blogs.map(blog => 
       blog.id === updatedBlog.id ? { ...blog, ...updatedBlog } : blog
     ));
@@ -56,8 +81,8 @@ const Dashboard = () => {
     }
   };
 
-  const handleAddComment = (blogId: string, comment: any) => {
-    const newComment = {
+  const handleAddComment = (blogId: string, comment: { text: string }) => {
+    const newComment: Comment = {
       id: 'c' + Date.now(),
       text: comment.text,
       author: user?.email || 'Anonymous',
@@ -67,13 +92,13 @@ const Dashboard = () => {
     
     setBlogs(blogs.map(blog => 
       blog.id === blogId 
-        ? { ...blog, comments: [newComment, ...(blog.comments || [])] } 
+        ? { ...blog, comments: [newComment, ...blog.comments] } 
         : blog
     ));
   };
 
   const handleAddReply = (blogId: string, commentId: string, replyText: string) => {
-    const newReply = {
+    const newReply: Reply = {
       id: 'r' + Date.now(),
       text: replyText,
       author: user?.email || 'Anonymous',
@@ -83,12 +108,12 @@ const Dashboard = () => {
     setBlogs(blogs.map(blog => {
       if (blog.id !== blogId) return blog;
       
-      const updatedComments = blog.comments.map((comment: any) => {
+      const updatedComments = blog.comments.map(comment => {
         if (comment.id !== commentId) return comment;
         
         return {
           ...comment,
-          replies: [...(comment.replies || []), newReply]
+          replies: [...comment.replies, newReply]
         };
       });
       
